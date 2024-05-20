@@ -46,8 +46,8 @@ GLfloat shadowPlane[4];
 GLfloat shadowMatrix[4][4];
 
 unsigned frameCount = 0;
-unsigned int wWidth = 500; // window width
-unsigned int wHeight = 500; // window height
+unsigned int wWidth = 1280; // window width
+unsigned int wHeight = 720; // window height
 
 /* Normalize a vector. */
 void normalize(float v[3]) {
