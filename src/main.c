@@ -748,7 +748,7 @@ void timerFunction(int value)
   glutTimerFunc(10, timerFunction, 1);
 }
 
-void main(int argc, char** argv)
+int main(int argc, char** argv)
 {
 	/* Standard GLUT initialization */
 	glutInit(&argc, argv);
@@ -776,5 +776,6 @@ void main(int argc, char** argv)
 	myinit(); /* set attributes */
 
 	glutMainLoop(); /* enter event loop */
+  return 0;
 }
 
