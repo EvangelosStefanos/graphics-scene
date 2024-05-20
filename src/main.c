@@ -10,7 +10,7 @@ GLfloat normalVectorsTriangle[3][3]; // normal vectors of a triangle
 GLfloat sun_ambient[] = { 0.0, 0.0, 0.0, 1.0 },
 sun_diffuse[] = { 0.3, 0.3, 0.3, 1.0 },
 sun_specular[] = { 0.3, 0.3, 0.3, 1.0 },
-sun_position[] = { -50.0, 0.0, 0.0, 1.0 };
+sun_position[] = { -55.0, 0.0, 0.0, 1.0 };
 
 GLfloat sphereSpecular[] = { 0.0, 0.0, 0.0, 1.0 },
 sphereAmbientAndDiffuse[] = { 0.0, 0.0, 0.0, 1.0 },
@@ -44,6 +44,10 @@ int grassX = 1;
 int grassY = 1;
 GLfloat shadowPlane[4];
 GLfloat shadowMatrix[4][4];
+
+unsigned frameCount = 0;
+unsigned int wWidth = 1280; // window width
+unsigned int wHeight = 720; // window height
 
 /* Normalize a vector. */
 void normalize(float v[3]) {
@@ -108,11 +112,8 @@ void createSun()
 	// calculate the color of the sphere
 	// as the sphere gains height it's color changes to yellow
 	// as the sphere loses height it's color changes to orange
-	GLfloat x = 0.0,
-		y = 0.0;
-
-	x = (sun_diffuse[0] - 0.3f) / (1.0f - 0.3f); // normalize
-	y = 1.2*x <= 1.0 ? 0.4 + 1.2*x : 1.0;
+  GLfloat x = (sun_diffuse[0] - 0.3f) / (1.0f - 0.3f); // normalize
+  GLfloat y = 1.2 * x <= 1.0 ? 0.4 + 1.2 * x : 1.0;
 
 	sphereEmission[1] = y;
 
@@ -385,29 +386,26 @@ void createGrassManyPolygons(int maxDimensionX, int maxDimensionY)
 	}
 }
 
-/* Set the sun's new rotation angle and draw the next frame. */
 void idle(void)
 {
-	GLfloat increase = sunRangle < 180 ? 0.01 : 0.10; // rotate faster at night
-	if (sunRangle > 359)
-	{
-		sunRangle = 0;
-	}
-	if (grassX >= 100)
-	{
-		sunRangle += 2 * increase;
-	}
-	else
-	{
-		sunRangle += increase;
-	}
 	glutPostRedisplay();
+}
+
+/* Set the sun's new rotation angle. */
+void advanceSun(float degrees)
+{
+  GLfloat increase = sunRangle < 180 ? degrees : 2.0 * degrees; // rotate faster at night
+  if (sunRangle > 359)
+  {
+    sunRangle = 0;
+  }
+  sunRangle += increase;
 }
 
 /* Calculate the color of the sun's light. */
 void sunIntensity()
 {
-	if (sunRangle > 180)
+	if (sunRangle > 181)
 	{
 		return;
 	}
@@ -499,7 +497,7 @@ void newShadowMatrix(GLfloat shadowMat[4][4],
 void houseShadow()
 {
 	// house shadow
-	if (sunRangle > 180)
+	if (sunRangle > 181)
 	{
 		return;
 	}
@@ -509,17 +507,17 @@ void houseShadow()
 
 	// calculate shadow color
 	// the shadow color becomes darker when the sunlight becomes brighter
-	GLfloat x = 0.0,
-		y = 0.0;
+	GLfloat x = 0.0;
+  GLfloat y = 0.0;
 
-	x = (sun_diffuse[0] - 0.3f) / (1.0 - 0.3f); // normalize
+  x = (sun_diffuse[0] - 0.3f) / (1.0 - 0.3f); // normalize
 	y = x*1.1 < 0.8 ? 1.1*x : 0.8;
 
 	// draw shadow
 
 	// render only when stencil is greater than 2
 	// when rendered update stencil to 2
-	glStencilFunc(GL_LESS, 2, 0xffffffff);
+	glStencilFunc(GL_LESS, 2, 0xFF);
 	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
 	glDisable(GL_DEPTH_TEST);
@@ -539,6 +537,7 @@ void houseShadow()
 
 void display(void)
 {
+  ++frameCount;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);  /*clear the window */
 	glLoadIdentity();
 
@@ -550,32 +549,33 @@ void display(void)
 
 	// set the new position of the camera
 	glPushMatrix(); // push initial
-	cameraX = 70.0*sin(rangle*(PI / 180)) + 0.0*cos(rangle*(PI / 180)),
-		cameraY = 40.0,
-		cameraZ = 70.0*cos(rangle*(PI / 180)) - 0.0*sin(rangle*(PI / 180));
+	cameraX = 70.0*sin(rangle*(PI / 180)) + 0.0*cos(rangle*(PI / 180));
+  cameraY = 40.0;
+	cameraZ = 70.0*cos(rangle*(PI / 180)) - 0.0*sin(rangle*(PI / 180));
 
-	gluLookAt(cameraX, 40.0, cameraZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0); // eye at [0, 40, 70] looking at [0, 0, 0] up vector [0, 1.0, 0.0]
+	gluLookAt(cameraX, 40.0, cameraZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0); // eye at [0, 40, 70] looking at [0, 0, 0] up vector [0.0, 1.0, 0.0]
 
-																	 // light source and sphere
+  // light source and sphere
 	glPushMatrix(); // push lookAt
 	glLightfv(GL_LIGHT0, GL_POSITION, sun_position); // position the light source
-	glRotatef(-sunRangle, 0, 0, 1); // rotate the sphere
-	glTranslatef(-50, 0, 0);
-	createSun(); // draw the sphere
-	sunIntensity(); // set the sun's intensity
+  glRotatef(-sunRangle, 0, 0, 1); // rotate the sphere
+	glTranslatef(-55, 0, 0);
+  glScalef(3.0, 3.0, 3.0);
+  createSun();    // draw the sphere
+  sunIntensity(); // set the sun's intensity
 	glPopMatrix(); // pop lookAt
 
-				   // spotlight
+  // spotlight
 	glLightfv(GL_LIGHT1, GL_POSITION, spotlight_Position); // position the spotlight
 	glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spotlight_SpotDirection);
 
 	// house
 	createHouse(); // draw house
 
-				   // grass
-				   // draw the grass with stencil value 3
+  // grass
+  // draw the grass with stencil value 3
 	glEnable(GL_STENCIL_TEST);
-	glStencilFunc(GL_ALWAYS, 3, 0xffffffff);
+	glStencilFunc(GL_ALWAYS, 3, 0xFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	glPushMatrix(); // push lookAt
@@ -585,7 +585,7 @@ void display(void)
 	createGrassManyPolygons(grassX, grassY); // draw grass
 	glPopMatrix(); // pop lookAt
 
-				   // draw the shadow of the house
+  // draw the shadow of the house
 	glPushMatrix(); // push lookAt
 	houseShadow();
 	glPopMatrix(); // pop lookAt
@@ -595,6 +595,37 @@ void display(void)
 
 	glutSwapBuffers();
 	glFlush(); /* clear buffers */
+}
+
+void setFrustum(int width, int height)
+{
+  GLdouble ratio = width/(double)height;
+  GLdouble left = -20;
+  GLdouble right = 20;
+  GLdouble bottom = -20;
+  GLdouble top = 20;
+  if (ratio > 1)
+  {
+    left *= ratio;
+    right *= ratio;
+  }
+  else
+  {
+    bottom /= ratio;
+    top /= ratio;
+  }
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glFrustum(left, right, bottom, top, 20, 160);
+  glViewport(0, 0, width, height);
+  glMatrixMode(GL_MODELVIEW);
+}
+
+void reshapeFunction(int width, int height)
+{
+  wWidth = width;
+  wHeight = height;
+  setFrustum(width, height);
 }
 
 void myinit(void)
@@ -609,11 +640,8 @@ void myinit(void)
 	glClearColor(1.0, 1.0, 1.0, 0.0); /* white background */
 	glColor3f(1.0, 0.0, 0.0); /* draw in red */
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glFrustum(-20.0, 20.0, -20.0, 20.0, 20.0, 160.0);
+  setFrustum(500, 500);
 	//glOrtho(-60, 60, -60, 60, -60, 60);
-	glMatrixMode(GL_MODELVIEW);
 	createSquare();
 	createTriangle();
 
@@ -695,18 +723,45 @@ void keyboardCallback(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
+void timerFunction(int value)
+{
+  char * prefix = "Little house in the field";
+  if (0 != value)
+  {
+    char *TempString = (char *)
+        malloc(512 + strlen(prefix));
+
+    sprintf(
+        TempString,
+        "%s: %d Frames Per Second @ %d x %d",
+        prefix,
+        frameCount * 100,
+        wWidth,
+        wHeight);
+
+    glutSetWindowTitle(TempString);
+    free(TempString);
+  }
+
+  frameCount = 0;
+  advanceSun(0.1);
+  glutTimerFunc(10, timerFunction, 1);
+}
+
 void main(int argc, char** argv)
 {
 	/* Standard GLUT initialization */
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_STENCIL); /* not default, needed */
-	glutInitWindowSize(500, 500); /* 500 x 500 pixel window */
+	glutInitWindowSize(wWidth, wHeight); /* 500 x 500 pixel window */
 	glutInitWindowPosition(0, 0); /* place window top left on display */
 	glutCreateWindow("Little house in the field"); /* window title */
 	glutDisplayFunc(display); /* display callback invoked when window opened */
+  glutReshapeFunc(reshapeFunction);
 	glutIdleFunc(idle);
+  glutTimerFunc(0, timerFunction, 0);
 
-	glutCreateMenu(menuCallback);
+  glutCreateMenu(menuCallback);
 	glutAddMenuEntry("Grass 1 polygon", 1);
 	glutAddMenuEntry("Grass 100 polygons", 2);
 	glutAddMenuEntry("Grass 10000 polygons", 3);

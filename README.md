@@ -4,6 +4,8 @@
 ## Details
   A house, a spotlight, a sun and a day/night cycle all together. What more could a man possibly want?
 
+![Project Preview Gif](preview.gif)
+
 ## Compiling
   - Platform: Windows
   - Compiler: [MinGW v8.1.0](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-win32/seh/)
